@@ -1,14 +1,6 @@
 """
 CMC Engage Alumni Directory Scraper
-------------------------------------
-Run this script LOCALLY on your machine (not in the cloud).
-
-Requirements:
-    pip install playwright openpyxl pandas
-    playwright install chromium
-
-Usage:
-    python scrape_engage_cmc.py
+Run: python3 scrape_engage_cmc.py
 """
 
 import asyncio
@@ -20,19 +12,18 @@ from playwright.async_api import async_playwright
 DIRECTORY_URL = "https://engage.cmc.edu/directory"
 
 TARGET_KEYWORDS = [
-    "artificial intelligence", "machine learning", " ai ", "ml ", "startup",
-    "venture", "founder", "software engineer", "product manager", "product",
-    "data scientist", "data analyst", "quantitative", "quant", "tech",
-    "engineer", "developer", "saas", "fintech", "deeptech",
-    "investment banking", "investment bank", "goldman", "morgan stanley",
-    "jp morgan", "jpmorgan", "bank of america", "citi", "citigroup",
-    "lazard", "evercore", "jefferies", "moelis", "houlihan",
+    "artificial intelligence", "machine learning", " ai ", "startup",
+    "venture", "founder", "software engineer", "product manager",
+    "data scientist", "data analyst", "quantitative", "quant",
+    "engineer", "developer", "saas", "fintech",
+    "investment banking", "goldman", "morgan stanley", "jp morgan",
+    "lazard", "evercore", "jefferies", "moelis",
     "private equity", "private credit", "hedge fund", "asset management",
-    "equity research", "capital markets", "corporate finance", "financial analyst",
-    "wealth management", "portfolio", "m&a",
+    "equity research", "capital markets", "corporate finance",
+    "wealth management", "m&a",
     "consulting", "consultant", "mckinsey", "bain", "bcg", "deloitte",
-    "accenture", "pwc", "kpmg", "ey ", "ernst", "strategy&", "oliver wyman",
-    "venture capital", "vc ", "growth equity",
+    "accenture", "pwc", "kpmg", "oliver wyman",
+    "venture capital", "growth equity",
 ]
 
 
@@ -40,17 +31,18 @@ def tag_industry(title: str, company: str) -> str:
     text = f"{title} {company}".lower()
     tags = []
     if any(k in text for k in ["consulting", "consultant", "mckinsey", "bain", "bcg",
-                                 "deloitte", "accenture", "pwc", "kpmg", "oliver wyman"]):
+                                "deloitte", "accenture", "pwc", "kpmg", "oliver wyman"]):
         tags.append("Consulting")
-    if any(k in text for k in ["investment banking", "investment bank", "goldman", "morgan stanley",
-                                 "jp morgan", "lazard", "evercore", "jefferies", "moelis", "m&a",
-                                 "capital markets", "corporate finance"]):
+    if any(k in text for k in ["investment banking", "goldman", "morgan stanley",
+                                "jp morgan", "lazard", "evercore", "jefferies", "moelis",
+                                "m&a", "capital markets", "corporate finance"]):
         tags.append("IB / Corp Finance")
-    if any(k in text for k in ["private equity", "private credit", "hedge fund", "asset management",
-                                 "venture capital", "vc ", "growth equity", "wealth management"]):
+    if any(k in text for k in ["private equity", "private credit", "hedge fund",
+                                "asset management", "venture capital", "growth equity",
+                                "wealth management"]):
         tags.append("Finance / Investing")
     if any(k in text for k in ["artificial intelligence", "machine learning", "saas",
-                                 "fintech", "software engineer", "developer", "data scientist"]):
+                                "fintech", "software engineer", "developer", "data scientist"]):
         tags.append("AI / Tech")
     if any(k in text for k in ["startup", "founder", "co-founder"]):
         tags.append("Startup")
@@ -62,67 +54,64 @@ def is_relevant(title: str, company: str) -> bool:
     return any(k in text for k in TARGET_KEYWORDS)
 
 
-# Intercept API responses to grab JSON directly
-api_records = []
-
 async def scrape_directory():
-    global api_records
     records = []
     intercepted_json = []
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False, slow_mo=100)
+        browser = await p.chromium.launch(headless=False)
         context = await browser.new_context()
         page = await context.new_page()
 
-        # Intercept network responses to catch API calls
+        # Intercept API calls
         async def handle_response(response):
             url = response.url
-            if any(x in url for x in ["/api/", "/users", "/directory", "/members", "/search"]):
+            if any(x in url for x in ["/api/", "/users", "/directory", "/members", "/search", "/people"]):
                 try:
                     ct = response.headers.get("content-type", "")
                     if "json" in ct:
                         body = await response.json()
                         intercepted_json.append({"url": url, "data": body})
-                        print(f"  [API] Intercepted: {url}")
+                        print(f"  [API hit] {url}")
                 except Exception:
                     pass
 
         page.on("response", handle_response)
 
-        print("Opening Engage CMC directory...")
-        print(">>> Log in with your CMC SSO when the browser opens. <<<")
-        print(">>> Press ENTER in this terminal once you can see alumni profiles. <<<\n")
-
         await page.goto(DIRECTORY_URL)
 
-        # Wait for user to confirm they're logged in and see results
-        await asyncio.get_event_loop().run_in_executor(None, input, "")
+        print("\n" + "="*60)
+        print("STEP 1: A browser window just opened.")
+        print("STEP 2: Log into Engage CMC with your CMC email.")
+        print("STEP 3: Wait until you can SEE alumni names/profiles.")
+        print("STEP 4: Come back here and press ENTER.")
+        print("="*60 + "\n")
 
-        print("Scraping... please wait.\n")
-        await asyncio.sleep(3)
+        # Block here until user presses ENTER
+        input("Press ENTER when you can see alumni profiles in the browser: ")
 
-        # Save HTML snapshot for debugging
+        print("\nGot it! Waiting 5 seconds for page to fully settle...")
+        await asyncio.sleep(5)
+
+        # Save snapshot
         html = await page.content()
-        with open("engage_snapshot.html", "w") as f:
+        with open("engage_snapshot.html", "w", encoding="utf-8") as f:
             f.write(html)
-        print("Saved HTML snapshot to engage_snapshot.html")
+        print("Saved engage_snapshot.html")
 
-        # Save intercepted API calls
         if intercepted_json:
             with open("engage_api_calls.json", "w") as f:
-                json.dump(intercepted_json, f, indent=2)
-            print(f"Saved {len(intercepted_json)} API call(s) to engage_api_calls.json")
+                json.dump(intercepted_json, f, indent=2, default=str)
+            print(f"Saved {len(intercepted_json)} API response(s) to engage_api_calls.json")
 
-        # --- Try to extract records from intercepted API JSON ---
+        # --- Parse API JSON if available ---
         for call in intercepted_json:
             data = call["data"]
-            # Common patterns: list at root, or nested under "data", "results", "users", "members"
             items = []
             if isinstance(data, list):
                 items = data
             elif isinstance(data, dict):
-                for key in ["data", "results", "users", "members", "directory", "items"]:
+                for key in ["data", "results", "users", "members", "directory", "items", "profiles"]:
                     if key in data and isinstance(data[key], list):
                         items = data[key]
                         break
@@ -130,58 +119,59 @@ async def scrape_directory():
             for item in items:
                 if not isinstance(item, dict):
                     continue
-                # Try common field names
                 name = (item.get("name") or item.get("full_name") or
-                        f"{item.get('first_name','')} {item.get('last_name','')}".strip() or "")
+                        f"{item.get('first_name', '')} {item.get('last_name', '')}".strip())
                 email = item.get("email") or item.get("email_address") or ""
                 title = item.get("title") or item.get("position") or item.get("job_title") or ""
                 company = (item.get("company") or item.get("organization") or
-                           item.get("employer") or item.get("org") or "")
+                           item.get("employer") or "")
                 grad_year = str(item.get("graduation_year") or item.get("grad_year") or
                                 item.get("class_year") or "")
-
-                if name:
+                if name and name.strip():
                     records.append({
-                        "Name": name,
+                        "Name": name.strip(),
                         "Title": title,
                         "Company/Org": company,
                         "Email": email,
                         "Grad Year": grad_year,
                         "Industry Tag": tag_industry(title, company),
                         "_relevant": is_relevant(title, company),
-                        "Connection": "",
+                        "Connection": "CMC Alumni",
                         "Notes": "",
                     })
 
-        # --- Fallback: scrape visible DOM ---
+        # --- DOM fallback ---
         if not records:
-            print("No API JSON found — trying DOM scrape...")
+            print("No API JSON matched — trying DOM scrape...")
+            # Dump all text blocks that look like person cards
+            all_text_blocks = await page.evaluate("""() => {
+                const results = [];
+                document.querySelectorAll('*').forEach(el => {
+                    const text = el.innerText;
+                    if (!text) return;
+                    const lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
+                    // Look for elements with 2-8 lines, first line looks like a name
+                    if (lines.length >= 2 && lines.length <= 8) {
+                        const firstLine = lines[0];
+                        // Name pattern: two capitalized words
+                        if (/^[A-Z][a-z]+ [A-Z]/.test(firstLine) && firstLine.length < 50) {
+                            results.push(lines);
+                        }
+                    }
+                });
+                // Deduplicate
+                const seen = new Set();
+                return results.filter(block => {
+                    const key = block[0];
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+            }""")
 
-            # Broad selector sweep
-            all_selectors = [
-                "li", "tr", "div[class]", "article", "section > div",
-            ]
-            best_cards = []
-            for sel in all_selectors:
-                cards = await page.query_selector_all(sel)
-                # A "profile card" likely has 3-6 lines of text and contains an @ or a name pattern
-                candidates = []
-                for card in cards:
-                    try:
-                        text = await card.inner_text()
-                        lines = [l.strip() for l in text.splitlines() if l.strip()]
-                        if 2 <= len(lines) <= 10 and any(
-                            re.search(r"[A-Z][a-z]+ [A-Z][a-z]+", l) for l in lines[:2]
-                        ):
-                            candidates.append((card, lines))
-                    except Exception:
-                        pass
-                if len(candidates) > len(best_cards):
-                    best_cards = candidates
-
-            print(f"DOM: found {len(best_cards)} candidate cards")
-            for card, lines in best_cards:
-                name = lines[0] if lines else ""
+            print(f"DOM: found {len(all_text_blocks)} candidate profile blocks")
+            for lines in all_text_blocks:
+                name = lines[0]
                 email = next((l for l in lines if "@" in l and "." in l), "")
                 title = lines[1] if len(lines) > 1 else ""
                 company = lines[2] if len(lines) > 2 else ""
@@ -191,49 +181,49 @@ async def scrape_directory():
                     if m:
                         grad_year = m.group()
                         break
-                if name:
-                    records.append({
-                        "Name": name,
-                        "Title": title,
-                        "Company/Org": company,
-                        "Email": email,
-                        "Grad Year": grad_year,
-                        "Industry Tag": tag_industry(title, company),
-                        "_relevant": is_relevant(title, company),
-                        "Connection": "",
-                        "Notes": "",
-                    })
+                records.append({
+                    "Name": name,
+                    "Title": title,
+                    "Company/Org": company,
+                    "Email": email,
+                    "Grad Year": grad_year,
+                    "Industry Tag": tag_industry(title, company),
+                    "_relevant": is_relevant(title, company),
+                    "Connection": "CMC Alumni",
+                    "Notes": "",
+                })
 
+        print(f"\nTotal records extracted: {len(records)}")
+
+        input("\nPress ENTER to close the browser: ")
         await browser.close()
 
     return records
 
 
-def save_to_excel(records: list, filename="networking_list.xlsx"):
+def save_to_excel(records, filename="networking_list.xlsx"):
     if not records:
         print("\nNo records found.")
-        print("Check engage_snapshot.html and engage_api_calls.json for clues.")
-        print("Share those files and I can fix the selectors.")
+        print("Share engage_snapshot.html and engage_api_calls.json so I can fix the selectors.")
         return
 
     df_all = pd.DataFrame(records)
-    df_relevant = df_all[df_all["_relevant"] == True].drop(columns=["_relevant"])
-    df_relevant = df_relevant.sort_values(["Industry Tag", "Grad Year"])
+    df_relevant = df_all[df_all["_relevant"]].drop(columns=["_relevant"]).sort_values(
+        ["Industry Tag", "Grad Year"])
     df_full = df_all.drop(columns=["_relevant"])
 
     with pd.ExcelWriter(filename, engine="openpyxl") as writer:
         df_relevant.to_excel(writer, sheet_name="Relevant Targets", index=False)
         df_full.to_excel(writer, sheet_name="All Alumni", index=False)
-        for sheet_name in writer.sheets:
-            ws = writer.sheets[sheet_name]
+        for ws in writer.sheets.values():
             for col in ws.columns:
-                max_len = max((len(str(cell.value or "")) for cell in col), default=10)
-                ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 50)
+                w = max((len(str(c.value or "")) for c in col), default=10)
+                ws.column_dimensions[col[0].column_letter].width = min(w + 4, 50)
 
     df_relevant.to_csv(filename.replace(".xlsx", ".csv"), index=False)
-    print(f"\nSaved {len(df_relevant)} relevant contacts to '{filename}'")
-    print(f"Total alumni scraped: {len(df_full)}")
-    print(f"\nIndustry breakdown:")
+    print(f"\nSaved {len(df_relevant)} relevant contacts → {filename}")
+    print(f"Total alumni: {len(df_full)}")
+    print("\nIndustry breakdown:")
     print(df_relevant["Industry Tag"].value_counts().to_string())
 
 
