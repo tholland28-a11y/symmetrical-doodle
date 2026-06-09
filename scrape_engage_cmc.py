@@ -97,7 +97,6 @@ def fetch_page(page_number: int) -> dict:
 
 
 def parse_person(item: dict) -> dict:
-    # Try multiple common field name patterns from Graduway API
     first = item.get("firstName") or item.get("first_name") or ""
     last  = item.get("lastName")  or item.get("last_name")  or ""
     name  = item.get("name") or item.get("fullName") or f"{first} {last}".strip()
@@ -106,11 +105,26 @@ def parse_person(item: dict) -> dict:
                item.get("title") or item.get("position") or "")
     company = (item.get("company") or item.get("companyName") or
                item.get("organization") or item.get("employer") or "")
-    email   = (item.get("email") or item.get("emailAddress") or
-               item.get("email_address") or "")
-    grad    = str(item.get("graduationYear") or item.get("graduation_year") or
-                  item.get("classYear") or item.get("class_year") or "")
-    major   = item.get("major") or item.get("fieldOfStudy") or ""
+    email   = item.get("email") or item.get("emailAddress") or ""
+
+    # Graduway stores grad year + major inside categoryFieldItemTranslations
+    grad  = ""
+    major = ""
+    cats  = item.get("categoryFieldItemTranslations") or {}
+    if isinstance(cats, dict):
+        # Keys are category names; values are lists of strings
+        for k, v in cats.items():
+            kl = k.lower()
+            val = ", ".join(v) if isinstance(v, list) else str(v)
+            if any(x in kl for x in ["year", "class", "grad"]):
+                grad = val
+            elif any(x in kl for x in ["major", "field", "study", "concentration"]):
+                major = val
+    if not grad:
+        grad = str(item.get("graduationYear") or item.get("graduation_year") or
+                   item.get("classYear") or "")
+    if not major:
+        major = item.get("major") or item.get("fieldOfStudy") or ""
 
     return {
         "Name":        name,
@@ -135,21 +149,20 @@ def scrape_all() -> list:
     items    = []
     raw_keys = list(first.keys()) if isinstance(first, dict) else []
 
-    if isinstance(first, list):
+    # Graduway wraps everything: {"httpStatusCode":200, "content":{"isSuccess":true,"data":{"totalCount":N,"directoryUsers":[...]}}}
+    if isinstance(first, dict) and "content" in first:
+        content = first["content"]
+        data_block = content.get("data", {}) if isinstance(content, dict) else {}
+        items = data_block.get("directoryUsers", [])
+        total = data_block.get("totalCount", 0)
+    elif isinstance(first, list):
         items = first
     elif isinstance(first, dict):
-        for key in ["data", "results", "items", "users", "members", "profiles", "people"]:
+        for key in ["directoryUsers", "data", "results", "items", "users", "members"]:
             if key in first and isinstance(first[key], list):
                 items = first[key]
                 break
-        if not items:
-            # fallback: first list value in the dict
-            for v in first.values():
-                if isinstance(v, list) and len(v) > 0:
-                    items = v
-                    break
-        total = (first.get("totalCount") or first.get("total") or
-                 first.get("count") or first.get("totalRecords") or 0)
+        total = first.get("totalCount", 0)
 
     if not items:
         print(f"\nUnexpected response structure. Keys: {raw_keys}")
@@ -171,18 +184,15 @@ def scrape_all() -> list:
         try:
             data  = fetch_page(page)
             batch = []
-            if isinstance(data, list):
+            if isinstance(data, dict) and "content" in data:
+                batch = data["content"].get("data", {}).get("directoryUsers", [])
+            elif isinstance(data, list):
                 batch = data
             elif isinstance(data, dict):
-                for key in ["data", "results", "items", "users", "members", "profiles", "people"]:
+                for key in ["directoryUsers", "data", "results", "items", "users", "members"]:
                     if key in data and isinstance(data[key], list):
                         batch = data[key]
                         break
-                if not batch:
-                    for v in data.values():
-                        if isinstance(v, list):
-                            batch = v
-                            break
             if not batch:
                 print(f"  Page {page}: empty — stopping.")
                 break
