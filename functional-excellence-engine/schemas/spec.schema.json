@@ -1,0 +1,195 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "spec.schema.json",
+  "title": "Functional-Excellence Spec",
+  "description": "Stage 4 (Spec Generation) output: specs/<slug>.js exporting this object. The exact contract the docx engine (engine_bic.js) consumes. Every case must map directly from a vetted record in that function's research bank; no case may cite an event not in the bank. The counts below mirror the proven 13-section format.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title", "control", "landscape", "economics", "axioms", "pillars",
+    "metricsIntro", "metrics", "metricsNote", "bestPractices", "failureRefs",
+    "diagnostics", "interventions", "plan", "cases", "ceoPriorities",
+    "maintenance", "sources"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Function name as it appears on the cover, e.g. \"Cybersecurity\"."
+    },
+    "control": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Section 1 — Control Tower / executive framing: what excellence in this function means and why the board should care."
+    },
+    "landscape": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Section 2 — the competitive/operating landscape this function operates in."
+    },
+    "economics": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Section 3 — the economics: cost, value, and risk levers this function moves."
+    },
+    "axioms": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Section 4 — exactly 6 governing axioms."
+    },
+    "pillars": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "detail"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        }
+      },
+      "description": "Section 5 — exactly 4 capability pillars."
+    },
+    "metricsIntro": { "type": "string", "minLength": 1, "description": "Section 6 lead-in." },
+    "metrics": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "definition", "target"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "definition": { "type": "string", "minLength": 1 },
+          "target": { "type": "string", "minLength": 1 }
+        }
+      },
+      "description": "Section 6 — exactly 8 metrics."
+    },
+    "metricsNote": { "type": "string", "minLength": 1, "description": "Section 6 caveat / calibration note." },
+    "bestPractices": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Section 7 — best-in-class practices."
+    },
+    "failureRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Section 8 — common failure modes / anti-patterns."
+    },
+    "diagnostics": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Section 9 — exactly 10 diagnostic questions a board can ask."
+    },
+    "interventions": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "detail"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        }
+      },
+      "description": "Section 10 — exactly 6 interventions."
+    },
+    "plan": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["horizon", "actions"],
+        "properties": {
+          "horizon": { "type": "string", "minLength": 1, "description": "e.g. \"0-30 days\"." },
+          "actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "description": "Section 11 — phased action plan (e.g. 30/60/90)."
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 9,
+      "items": { "$ref": "#/definitions/case" },
+      "description": "Section 12 — 8 to 9 case studies, each mapped from a vetted research record."
+    },
+    "ceoPriorities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Section 13a — the handful of priorities a CEO should own for this function."
+    },
+    "maintenance": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Section 13b — how to keep this function excellent over time."
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "url"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "url": { "type": "string", "format": "uri" }
+        }
+      },
+      "description": "Sources appendix — every URL cited, deduplicated."
+    }
+  },
+  "definitions": {
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "entity", "date", "context", "situation", "approach", "result", "lesson", "source", "tier"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Event name. Combined with entity + date it forms the case title the gate parses."
+        },
+        "entity": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The proper noun (named company / CVE / agency). REQUIRED — the case gate rejects a doc whose case titles lack one."
+        },
+        "date": {
+          "type": "string",
+          "pattern": ".*\\d{4}.*",
+          "description": "Must contain a 4-digit year. REQUIRED — the case gate rejects a doc whose case titles lack one."
+        },
+        "context": { "type": "string", "minLength": 1 },
+        "situation": { "type": "string", "minLength": 1 },
+        "approach": { "type": "string", "minLength": 1 },
+        "result": { "type": "string", "minLength": 1, "description": "The concrete, measurable outcome." },
+        "lesson": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Numbered tactical moves a reader can apply."
+        },
+        "source": { "type": "string", "format": "uri", "description": "Verifiable source URL." },
+        "tier": { "type": "integer", "enum": [1, 2, 3] }
+      }
+    }
+  }
+}
