@@ -1,0 +1,7 @@
+node_modules/
+package-lock.json
+
+# Per-run artifacts: keep the workdir tree, ignore generated runs.
+workdir/*/
+workdir/_smoke/
+*.docx

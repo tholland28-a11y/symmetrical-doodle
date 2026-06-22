@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "function.schema.json",
+  "title": "Functional Map",
+  "description": "Stage 2 (Functional Decomposition) output. The set of functions that constitute this business, derived from the company profile's industry classification and tailored to the specific company. Presented at CHECKPOINT 1 for human approval before any research runs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["company", "industry", "functions"],
+  "properties": {
+    "company": { "type": "string" },
+    "industry": { "type": "string", "description": "Echoes company_profile.industry.primary; the template basis." },
+    "templateSource": {
+      "type": "string",
+      "description": "Which reference/industry_functions.md entry seeded this map, if any."
+    },
+    "functions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "slug", "scope", "researchThemes", "weighting"],
+        "properties": {
+          "name": { "type": "string", "description": "Human-readable function name." },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+            "description": "Filesystem-safe identifier used for research/<slug>.json and specs/<slug>.js."
+          },
+          "scope": {
+            "type": "string",
+            "description": "1-2 sentences describing what this function covers for this company."
+          },
+          "researchThemes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" },
+            "description": "Search seeds for Stage 3 research harvesting."
+          },
+          "weighting": {
+            "type": "string",
+            "enum": ["core", "standard", "peripheral"],
+            "description": "Priority of this function for THIS company, so the build can prioritize what matters most."
+          }
+        }
+      }
+    }
+  }
+}

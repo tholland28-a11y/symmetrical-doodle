@@ -1,0 +1,14 @@
+{
+  "name": "functional-excellence-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automated, company-agnostic playbook-library generator. Claude orchestrates a five-stage pipeline; these scripts do only deterministic work (build docx, validate, count).",
+  "main": "engine/engine_bic.js",
+  "scripts": {
+    "build": "node engine/build_doc.js",
+    "smoke": "node engine/build_doc.js reference/spec_example.js workdir/_smoke/out/Example_BIC.docx && python3 scripts/validate.py workdir/_smoke/out/Example_BIC.docx && python3 scripts/verify_cases.py workdir/_smoke/out/Example_BIC.docx"
+  },
+  "dependencies": {
+    "docx": "^9.0.0"
+  }
+}

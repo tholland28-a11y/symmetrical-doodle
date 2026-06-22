@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "research.schema.json",
+  "title": "Research Bank",
+  "description": "Stage 3 (Research Harvesting) output for a single function: research/<slug>.json. A bank of real, named, dated events with verifiable outcomes. Each record must clear the vetting gate before it is allowed to feed a spec. Presented (counts + sample) at CHECKPOINT 2 for human approval. Target: 10-12 vetted events per function so the spec can select the best 8-9.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["function", "events"],
+  "properties": {
+    "function": { "type": "string", "description": "Function slug this bank belongs to." },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/event" }
+    },
+    "definitions": true
+  },
+  "definitions": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "entity", "date", "what_happened", "outcome", "source_url", "tier", "verified"],
+      "properties": {
+        "name": { "type": "string", "description": "Short label for the event." },
+        "entity": {
+          "type": "string",
+          "description": "Named company / CVE / agency — a proper noun. REQUIRED by the gate."
+        },
+        "date": {
+          "type": "string",
+          "pattern": ".*\\d{4}.*",
+          "description": "Event + outcome dates. Must contain a 4-digit year. REQUIRED by the gate."
+        },
+        "what_happened": { "type": "string" },
+        "outcome": {
+          "type": "string",
+          "description": "A concrete outcome: number, ruling, settlement, or measurable result. Records without one are flagged weak."
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "REQUIRED by the gate."
+        },
+        "tier": {
+          "type": "integer",
+          "enum": [1, 2, 3],
+          "description": "1 = regulatory, 2 = named event, 3 = structural."
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "true once the record has passed the vetting gate (named entity + date + source)."
+        },
+        "weak": {
+          "type": "boolean",
+          "description": "Set true when the record lacks a concrete outcome but otherwise passes."
+        }
+      }
+    }
+  }
+}
